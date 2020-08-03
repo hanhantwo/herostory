@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.tinygame.herostory.cmdHandle.CmdHandlerFactory;
 
 /**
  * @ClassName ServerMain
@@ -21,11 +22,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 public class ServerMain {
     public static void main(String[] args) {
+        CmdHandlerFactory.init();
+        GameMsgRecognizer.init();
         //启动两个线程池
         //bossGroup负责客户端的连接（通过nio），workGroup负责客户端消息读写
         //NioEventLoopGroup运行原理--例子餐馆点餐y
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workGroup =  new NioEventLoopGroup();
+
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup,workGroup);
         b.channel(NioServerSocketChannel.class);

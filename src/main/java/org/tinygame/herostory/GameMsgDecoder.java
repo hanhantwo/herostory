@@ -1,6 +1,7 @@
 package org.tinygame.herostory;
 
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.Message;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -17,9 +18,9 @@ import org.tinygame.herostory.msg.GameMsgProtocol;
  * @Date 2020-08-02 11:02
  * @Version 1.0
  */
-public class GameMsgDecoder extends ChannelInboundHandlerAdapter{
+public class GameMsgDecoder extends ChannelInboundHandlerAdapter {
     @Override
-    public void channelRead(ChannelHandlerContext context,Object msg) throws Exception{
+    public void channelRead(ChannelHandlerContext context, Object msg) throws Exception {
         if (!(msg instanceof BinaryWebSocketFrame)) {
             return;
         }
@@ -29,29 +30,23 @@ public class GameMsgDecoder extends ChannelInboundHandlerAdapter{
 
         byteBuf.readShort(); // 读取消息的长度
         int msgCode = byteBuf.readShort(); // 读取消息的编号
-
+        //获取消息构建者
+        Message.Builder msgBuilder = GameMsgRecognizer.getBuilderByMsgCode(msgCode);
+        if(msgBuilder==null){
+            System.out.println("无法识别的消息，msgCode={},"+msgCode);
+            return;
+        }
         // 拿到消息体
         byte[] msgBody = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(msgBody);
 
-        GeneratedMessageV3 cmd = null;
+        msgBuilder.clear();
+        msgBuilder.mergeFrom(msgBody);
 
-        switch (msgCode) {
-            case GameMsgProtocol.MsgCode.USER_ENTRY_CMD_VALUE:
-                cmd = GameMsgProtocol.UserEntryCmd.parseFrom(msgBody);
-                break;
+        Message newMsg = msgBuilder.build();
 
-            case GameMsgProtocol.MsgCode.WHO_ELSE_IS_HERE_CMD_VALUE:
-                cmd = GameMsgProtocol.WhoElseIsHereCmd.parseFrom(msgBody);
-                break;
-
-            case GameMsgProtocol.MsgCode.USER_MOVE_TO_CMD_VALUE:
-                cmd = GameMsgProtocol.UserMoveToCmd.parseFrom(msgBody);
-                break;
-        }
-
-        if (null != cmd) {
-            context.fireChannelRead(cmd);
+        if (null != newMsg) {
+            context.fireChannelRead(newMsg);
         }
     }
 }
